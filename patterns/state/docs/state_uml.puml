@@ -1,0 +1,47 @@
+@startuml
+allowmixing
+top to bottom direction
+skinparam backgroundColor white
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundcorner 0
+skinparam defaultFontName Arial
+skinparam defaultFontSize 18
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor white
+skinparam classHeaderBackgroundColor white
+skinparam rectangleBackgroundColor white
+skinparam noteBackgroundColor white
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 70
+hide circle
+
+class SecuritySystem {
+ +state: SecurityState
+ +siren: bool
+ +handle(event)
+ +transition_to(state)
+}
+class SecurityState {
+ +handle(context, event)
+}
+class Disarmed
+class Armed
+class Alarm
+SecuritySystem --> "1" SecurityState : state
+SecurityState <|-- Disarmed
+SecurityState <|-- Armed
+SecurityState <|-- Alarm
+Disarmed -[hidden]right- Armed
+Armed -[hidden]right- Alarm
+note bottom of SecuritySystem
+ Делегирует событие состоянию
+ Сирена включена только в Alarm
+end note
+note bottom of SecurityState
+ Базовый метод вызывает
+ NotImplementedError
+end note
+
+@enduml

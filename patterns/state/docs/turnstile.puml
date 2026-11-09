@@ -1,0 +1,18 @@
+@startuml
+top to bottom direction
+skinparam backgroundColor white
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundcorner 0
+skinparam defaultFontName Arial
+skinparam defaultFontSize 22
+skinparam stateBackgroundColor white
+skinparam noteBackgroundColor white
+skinparam linetype ortho
+skinparam ranksep 100
+state "Заблокирован" as Locked
+state "Разблокирован" as Unlocked
+[*] --> Locked
+Locked --> Unlocked : монета / открыть
+Unlocked --> Locked : проход / закрыть
+@enduml

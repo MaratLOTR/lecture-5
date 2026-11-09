@@ -1,0 +1,265 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>State — Состояние</title><style>
+:root{color-scheme:light;font:17px/1.65 system-ui,-apple-system,sans-serif;color:#203640;background:#fafbf9}
+*{box-sizing:border-box}body{margin:0}main{max-width:1060px;margin:auto;padding:32px 24px 70px}
+nav{display:flex;flex-wrap:wrap;gap:12px 24px;border-bottom:1px solid #ccd7da;padding-bottom:18px}
+a{color:#176579;text-underline-offset:3px}nav [aria-current]{font-weight:750;color:#203640}
+h1{font:700 clamp(30px,5vw,48px)/1.2 Georgia,serif;margin:40px 0 26px}
+h2{font:650 29px/1.3 Georgia,serif;margin:44px 0 18px}h3{margin:25px 0 12px}
+p,li{max-width:78ch}li{margin:6px 0}code{font:0.88em ui-monospace,monospace}
+pre{padding:18px;background:#edf2f3;border:1px solid #d7e1e4;overflow:auto;line-height:1.6}
+pre code{white-space:pre}p code,li code,td code{overflow-wrap:anywhere}
+.scroll,.diagram{overflow:auto}table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid #ccd7da}th{background:#eef3f3}
+.diagram img{display:block;width:100%;min-width:700px;height:auto;border:1px solid #d7e1e4}
+figure{margin:20px 0 30px}figcaption{margin-top:8px;color:#526970;font-size:15px}
+details{margin:18px 0;border-top:1px solid #ccd7da;padding-top:14px}summary{cursor:pointer;font-weight:650}
+button{font:inherit;font-size:14px;padding:6px 12px;background:#fff;border:1px solid #78939e;cursor:pointer;margin-top:14px}
+button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #257f99;outline-offset:4px}
+.status{margin-left:12px;font-size:14px}.note{border-left:4px solid #3b8190;padding:10px 18px;background:#edf4f3}
+footer{margin-top:50px;border-top:1px solid #ccd7da;padding-top:18px;color:#526970}
+@media(max-width:600px){main{padding:20px 15px}pre{font-size:14px}h2{font-size:25px}}
+@media print{nav,button,.status{display:none}main{max-width:none;padding:0}body{background:#fff}pre{white-space:pre-wrap;overflow:visible;font-size:10px}pre code{white-space:pre-wrap}details{break-inside:avoid}.diagram img{min-width:0}h2,h3{break-after:avoid}}
+</style></head><body><main><h1>State — Состояние</h1><p>SecuritySystem хранит текущее состояние и делегирует ему handle(context, event). Disarmed, Armed и Alarm задают разные реакции на arm, motion и disarm. В Disarmed движение игнорируется, в Armed вызывает Alarm. В Alarm сирена работает до disarm. transition_to() синхронизирует состояние и сирену. Повторные команды сохраняют состояние. Неизвестное событие вызывает ValueError без изменений.</p><p>Роли: SecuritySystem — Context, SecurityState — базовый контракт (метод вызывает NotImplementedError), Disarmed/Armed/Alarm — ConcreteState. Правила переходов здесь находятся в самих состояниях. Новые экземпляры создаются при переходе. Прямое присваивание state обходит синхронизацию сирены: используйте transition_to().</p><p>Turnstile — простой конечный автомат из лекции: locked/unlocked и события coin/passage. coin открывает заблокированный турникет, passage после оплаты пропускает и закрывает. Попытка без оплаты блокируется, повторная монета при открытом проходе возвращается. Результаты handle(): open, blocked, pass_and_close, return_coin. Это отдельная реализация через условия: машина состояний — модель, State — способ организовать её код. Наличие автомата не обязывает создавать классы состояний.</p><h2>Запуск</h2><pre>python3 __main__.py
+python3 -m pytest tests/test_example.py</pre><h2>Связи классов</h2><img style="max-width:100%" alt="Связи классов" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMTAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDExMDAgNDAwIiByb2xlPSJpbWciPjx0aXRsZT5TdGF0ZSDigJQg0KHQvtGB0YLQvtGP0L3QuNC1OiDRgdCy0Y/Qt9C4INC60LvQsNGB0YHQvtCyPC90aXRsZT48cmVjdCB3aWR0aD0iMTEwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmOGZiZmMiLz48c3R5bGU+dGV4dHtmb250OjE4cHggQXJpYWw7ZmlsbDojMTAyODNmfS5ib3h7ZmlsbDp3aGl0ZTtzdHJva2U6IzAwN2Q3NTtzdHJva2Utd2lkdGg6Mn0uZWRnZXtzdHJva2U6IzAwN2Q3NTtzdHJva2Utd2lkdGg6Mn08L3N0eWxlPjxkZWZzPjxtYXJrZXIgaWQ9ImFycm93IiBtYXJrZXJXaWR0aD0iMTAiIG1hcmtlckhlaWdodD0iMTAiIHJlZlg9IjkiIHJlZlk9IjUiIG9yaWVudD0iYXV0byI+PHBhdGggZD0iTTAgMCBMMTAgNSBMMCAxMCBaIiBmaWxsPSIjMDA3ZDc1Ii8+PC9tYXJrZXI+PC9kZWZzPjx0ZXh0IHg9IjMwIiB5PSIzNSIgZm9udC13ZWlnaHQ9ImJvbGQiPlN0YXRlIOKAlCDQodC+0YHRgtC+0Y/QvdC40LU6INGB0LLRj9C30Lgg0LrQu9Cw0YHRgdC+0LI8L3RleHQ+PHJlY3QgY2xhc3M9ImJveCIgeD0iMzAiIHk9IjY1IiB3aWR0aD0iMzEwIiBoZWlnaHQ9IjY1Ii8+PHRleHQgeD0iNDUiIHk9IjEwNCI+U2VjdXJpdHlTeXN0ZW08L3RleHQ+PHJlY3QgY2xhc3M9ImJveCIgeD0iNzYwIiB5PSI2NSIgd2lkdGg9IjMxMCIgaGVpZ2h0PSI2NSIvPjx0ZXh0IHg9Ijc3NSIgeT0iMTA0Ij5TZWN1cml0eVN0YXRlPC90ZXh0PjxsaW5lIGNsYXNzPSJlZGdlIiB4MT0iMzQwIiB5MT0iMTEwIiB4Mj0iNzU1IiB5Mj0iMTEwIiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIvPjx0ZXh0IHg9IjM1NSIgeT0iODgiIHN0eWxlPSJmb250LXNpemU6MTVweCI+c3RhdGUgLyDQtNC10LvQtdCz0LjRgNGD0LXRgiBoYW5kbGUoKTwvdGV4dD48cmVjdCBjbGFzcz0iYm94IiB4PSIzMCIgeT0iMTc1IiB3aWR0aD0iMzEwIiBoZWlnaHQ9IjY1Ii8+PHRleHQgeD0iNDUiIHk9IjIxNCI+RGlzYXJtZWQsIEFybWVkLCBBbGFybTwvdGV4dD48cmVjdCBjbGFzcz0iYm94IiB4PSI3NjAiIHk9IjE3NSIgd2lkdGg9IjMxMCIgaGVpZ2h0PSI2NSIvPjx0ZXh0IHg9Ijc3NSIgeT0iMjE0Ij5TZWN1cml0eVN0YXRlPC90ZXh0PjxsaW5lIGNsYXNzPSJlZGdlIiB4MT0iMzQwIiB5MT0iMjIwIiB4Mj0iNzU1IiB5Mj0iMjIwIiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIvPjx0ZXh0IHg9IjM1NSIgeT0iMTk4IiBzdHlsZT0iZm9udC1zaXplOjE1cHgiPtC90LDRgdC70LXQtNGD0Y7RgjwvdGV4dD48cmVjdCBjbGFzcz0iYm94IiB4PSIzMCIgeT0iMjg1IiB3aWR0aD0iMzEwIiBoZWlnaHQ9IjY1Ii8+PHRleHQgeD0iNDUiIHk9IjMyNCI+VHVybnN0aWxlPC90ZXh0PjxyZWN0IGNsYXNzPSJib3giIHg9Ijc2MCIgeT0iMjg1IiB3aWR0aD0iMzEwIiBoZWlnaHQ9IjY1Ii8+PHRleHQgeD0iNzc1IiB5PSIzMjQiPmxvY2tlZCAvIHVubG9ja2VkPC90ZXh0PjxsaW5lIGNsYXNzPSJlZGdlIiB4MT0iMzQwIiB5MT0iMzMwIiB4Mj0iNzU1IiB5Mj0iMzMwIiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIvPjx0ZXh0IHg9IjM1NSIgeT0iMzA4IiBzdHlsZT0iZm9udC1zaXplOjE1cHgiPtCw0LLRgtC+0LzQsNGCINGH0LXRgNC10Lcg0YPRgdC70L7QstC40Y88L3RleHQ+PC9zdmc+"><h2>Последовательность вызовов</h2><img style="max-width:100%" alt="Последовательность вызовов" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMTAwIiBoZWlnaHQ9IjYyMCIgdmlld0JveD0iMCAwIDExMDAgNjIwIiByb2xlPSJpbWciPjx0aXRsZT5TdGF0ZSDigJQg0KHQvtGB0YLQvtGP0L3QuNC1OiDQv9C+0YHQu9C10LTQvtCy0LDRgtC10LvRjNC90L7RgdGC0Ywg0LLRi9C30L7QstC+0LI8L3RpdGxlPjxyZWN0IHdpZHRoPSIxMTAwIiBoZWlnaHQ9IjYyMCIgZmlsbD0iI2Y4ZmJmYyIvPjxzdHlsZT50ZXh0e2ZvbnQ6MThweCBBcmlhbDtmaWxsOiMxMDI4M2Z9LmJveHtmaWxsOndoaXRlO3N0cm9rZTojMDA3ZDc1O3N0cm9rZS13aWR0aDoyfS5lZGdle3N0cm9rZTojMDA3ZDc1O3N0cm9rZS13aWR0aDoyfTwvc3R5bGU+PGRlZnM+PG1hcmtlciBpZD0iYXJyb3ciIG1hcmtlcldpZHRoPSIxMCIgbWFya2VySGVpZ2h0PSIxMCIgcmVmWD0iOSIgcmVmWT0iNSIgb3JpZW50PSJhdXRvIj48cGF0aCBkPSJNMCAwIEwxMCA1IEwwIDEwIFoiIGZpbGw9IiMwMDdkNzUiLz48L21hcmtlcj48L2RlZnM+PHRleHQgeD0iMzAiIHk9IjM1IiBmb250LXdlaWdodD0iYm9sZCI+U3RhdGUg4oCUINCh0L7RgdGC0L7Rj9C90LjQtTog0L/QvtGB0LvQtdC00L7QstCw0YLQtdC70YzQvdC+0YHRgtGMINCy0YvQt9C+0LLQvtCyPC90ZXh0PjxyZWN0IGNsYXNzPSJib3giIHg9IjMwIiB5PSI2NSIgd2lkdGg9IjMxMCIgaGVpZ2h0PSI2NSIvPjx0ZXh0IHg9IjQ1IiB5PSIxMDQiPkNsaWVudDwvdGV4dD48cmVjdCBjbGFzcz0iYm94IiB4PSI3NjAiIHk9IjY1IiB3aWR0aD0iMzEwIiBoZWlnaHQ9IjY1Ii8+PHRleHQgeD0iNzc1IiB5PSIxMDQiPlNlY3VyaXR5U3lzdGVtPC90ZXh0PjxsaW5lIGNsYXNzPSJlZGdlIiB4MT0iMzQwIiB5MT0iMTEwIiB4Mj0iNzU1IiB5Mj0iMTEwIiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIvPjx0ZXh0IHg9IjM1NSIgeT0iODgiIHN0eWxlPSJmb250LXNpemU6MTVweCI+aGFuZGxlKCZxdW90O2FybSZxdW90Oyk8L3RleHQ+PHJlY3QgY2xhc3M9ImJveCIgeD0iMzAiIHk9IjE3NSIgd2lkdGg9IjMxMCIgaGVpZ2h0PSI2NSIvPjx0ZXh0IHg9IjQ1IiB5PSIyMTQiPlNlY3VyaXR5U3lzdGVtPC90ZXh0PjxyZWN0IGNsYXNzPSJib3giIHg9Ijc2MCIgeT0iMTc1IiB3aWR0aD0iMzEwIiBoZWlnaHQ9IjY1Ii8+PHRleHQgeD0iNzc1IiB5PSIyMTQiPkRpc2FybWVkPC90ZXh0PjxsaW5lIGNsYXNzPSJlZGdlIiB4MT0iMzQwIiB5MT0iMjIwIiB4Mj0iNzU1IiB5Mj0iMjIwIiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIvPjx0ZXh0IHg9IjM1NSIgeT0iMTk4IiBzdHlsZT0iZm9udC1zaXplOjE1cHgiPmhhbmRsZShjb250ZXh0LCAmcXVvdDthcm0mcXVvdDspPC90ZXh0PjxyZWN0IGNsYXNzPSJib3giIHg9IjMwIiB5PSIyODUiIHdpZHRoPSIzMTAiIGhlaWdodD0iNjUiLz48dGV4dCB4PSI0NSIgeT0iMzI0Ij5EaXNhcm1lZDwvdGV4dD48cmVjdCBjbGFzcz0iYm94IiB4PSI3NjAiIHk9IjI4NSIgd2lkdGg9IjMxMCIgaGVpZ2h0PSI2NSIvPjx0ZXh0IHg9Ijc3NSIgeT0iMzI0Ij5TZWN1cml0eVN5c3RlbTwvdGV4dD48bGluZSBjbGFzcz0iZWRnZSIgeDE9IjM0MCIgeTE9IjMzMCIgeDI9Ijc1NSIgeTI9IjMzMCIgbWFya2VyLWVuZD0idXJsKCNhcnJvdykiLz48dGV4dCB4PSIzNTUiIHk9IjMwOCIgc3R5bGU9ImZvbnQtc2l6ZToxNXB4Ij50cmFuc2l0aW9uX3RvKEFybWVkKCkpPC90ZXh0PjxyZWN0IGNsYXNzPSJib3giIHg9IjMwIiB5PSIzOTUiIHdpZHRoPSIzMTAiIGhlaWdodD0iNjUiLz48dGV4dCB4PSI0NSIgeT0iNDM0Ij5DbGllbnQ8L3RleHQ+PHJlY3QgY2xhc3M9ImJveCIgeD0iNzYwIiB5PSIzOTUiIHdpZHRoPSIzMTAiIGhlaWdodD0iNjUiLz48dGV4dCB4PSI3NzUiIHk9IjQzNCI+U2VjdXJpdHlTeXN0ZW08L3RleHQ+PGxpbmUgY2xhc3M9ImVkZ2UiIHgxPSIzNDAiIHkxPSI0NDAiIHgyPSI3NTUiIHkyPSI0NDAiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIi8+PHRleHQgeD0iMzU1IiB5PSI0MTgiIHN0eWxlPSJmb250LXNpemU6MTVweCI+aGFuZGxlKCZxdW90O21vdGlvbiZxdW90Oyk8L3RleHQ+PHJlY3QgY2xhc3M9ImJveCIgeD0iMzAiIHk9IjUwNSIgd2lkdGg9IjMxMCIgaGVpZ2h0PSI2NSIvPjx0ZXh0IHg9IjQ1IiB5PSI1NDQiPkFybWVkPC90ZXh0PjxyZWN0IGNsYXNzPSJib3giIHg9Ijc2MCIgeT0iNTA1IiB3aWR0aD0iMzEwIiBoZWlnaHQ9IjY1Ii8+PHRleHQgeD0iNzc1IiB5PSI1NDQiPlNlY3VyaXR5U3lzdGVtPC90ZXh0PjxsaW5lIGNsYXNzPSJlZGdlIiB4MT0iMzQwIiB5MT0iNTUwIiB4Mj0iNzU1IiB5Mj0iNTUwIiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIvPjx0ZXh0IHg9IjM1NSIgeT0iNTI4IiBzdHlsZT0iZm9udC1zaXplOjE1cHgiPnRyYW5zaXRpb25fdG8oQWxhcm0oKSksIHNpcmVuPVRydWU8L3RleHQ+PC9zdmc+"><h2>Задания</h2><pre># Задание: ожидание постановки на охрану
+
+В security.py добавьте Arming(SecurityState). Измените переход Disarmed по arm:
+теперь он ведёт в Arming. В Arming timeout переводит в Armed, disarm — в Disarmed,
+а arm и motion сохраняют Arming. Сирена в Arming выключена.
+Разрешите timeout в SecuritySystem.handle(). В остальных состояниях timeout
+игнорируется. После timeout и motion должна сработать тревога.
+Не меняйте Turnstile и тесты. test_example.py учитывает появление Arming: после
+выполнения задания готовые примеры и тесты заданий должны проходить вместе.
+
+## Дополнительная практика
+
+state_entry_log.py: реализуйте LoggedSecuritySystem.transition_to(). Родитель
+поддерживает сирену, подкласс записывает имя состояния только при смене его типа.
+Проверьте tests/test_extra.py. Задание независимо от Arming.
+
+## Проверка из папки паттерна
+
+```bash
+python3 -m unittest discover -s tests -t .. -p &#x27;test_task.py&#x27; -v
+```
+
+Тесты заданий должны завершаться ошибками до реализации и проходить после неё.
+</pre><details open><summary>security.py</summary><button type="button" class="copy">Копировать код</button><span class="status" role="status"></span><pre><code>&quot;&quot;&quot;State: охрана и простой конечный автомат турникета.&quot;&quot;&quot;
+
+class SecuritySystem:
+    def __init__(self):
+        self.state = Disarmed()
+        self.siren = False
+
+    def transition_to(self, state):
+        self.state = state
+        self.siren = isinstance(state, Alarm)
+
+    def handle(self, event):
+        if event not in {&quot;arm&quot;, &quot;motion&quot;, &quot;disarm&quot;}:
+            raise ValueError(event)
+        self.state.handle(self, event)
+
+class SecurityState:
+    def handle(self, context, event):
+        raise NotImplementedError
+
+class Disarmed(SecurityState):
+    def handle(self, context, event):
+        if event == &quot;arm&quot;:
+            context.transition_to(Armed())
+        # motion и disarm: без изменений
+
+class Armed(SecurityState):
+    def handle(self, context, event):
+        if event == &quot;motion&quot;:
+            context.transition_to(Alarm())
+        elif event == &quot;disarm&quot;:
+            context.transition_to(Disarmed())
+
+class Alarm(SecurityState):
+    def handle(self, context, event):
+        if event == &quot;disarm&quot;:
+            context.transition_to(Disarmed())
+
+class Turnstile:
+    &quot;&quot;&quot;Правила из лекции. Событие passage означает попытку пройти.&quot;&quot;&quot;
+
+    def __init__(self):
+        self.state = &quot;locked&quot;
+
+    def handle(self, event):
+        if event not in {&quot;coin&quot;, &quot;passage&quot;}:
+            raise ValueError(event)
+        if self.state == &quot;locked&quot;:
+            if event == &quot;coin&quot;:
+                self.state = &quot;unlocked&quot;
+                return &quot;open&quot;
+            return &quot;blocked&quot;
+        if event == &quot;passage&quot;:
+            self.state = &quot;locked&quot;
+            return &quot;pass_and_close&quot;
+        return &quot;return_coin&quot;
+
+# ЗАДАНИЕ: добавьте Arming и обработку timeout, см. TASK.md.
+</code></pre></details><details open><summary>__main__.py</summary><button type="button" class="copy">Копировать код</button><span class="status" role="status"></span><pre><code>if __package__:
+    from . import security as m
+else:
+    import security as m
+
+
+def demo():
+    security = m.SecuritySystem()
+    for event in (&quot;motion&quot;, &quot;arm&quot;, &quot;motion&quot;, &quot;disarm&quot;):
+        security.handle(event)
+        print(event, type(security.state).__name__, &quot;сирена:&quot;, security.siren)
+    turnstile = m.Turnstile()
+    for event in (&quot;passage&quot;, &quot;coin&quot;, &quot;coin&quot;, &quot;passage&quot;, &quot;passage&quot;):
+        print(event, turnstile.handle(event), turnstile.state)
+
+
+if __name__ == &quot;__main__&quot;:
+    demo()
+</code></pre></details><details open><summary>state_entry_log.py</summary><button type="button" class="copy">Копировать код</button><span class="status" role="status"></span><pre><code>&quot;&quot;&quot;Дополнительно: запись смены состояний без дублирования логики сирены.
+
+LoggedSecuritySystem наследует SecuritySystem. history начинается со строки
+Disarmed. Переопределите transition_to(): вызовите родительский метод и добавьте
+имя нового состояния, только если его тип отличается от предыдущего.
+&quot;&quot;&quot;
+from .security import SecuritySystem
+
+
+class LoggedSecuritySystem(SecuritySystem):
+    def __init__(self):
+        super().__init__()
+        self.history = [type(self.state).__name__]
+
+    def transition_to(self, state):
+        # TODO: делегировать родителю и записать реальную смену состояния.
+        raise NotImplementedError(&quot;Реализуйте журнал переходов&quot;)
+</code></pre></details><details open><summary>tests/test_example.py</summary><button type="button" class="copy">Копировать код</button><span class="status" role="status"></span><pre><code>import unittest
+from ..security import SecuritySystem, Disarmed, Armed, Alarm, Turnstile
+from .. import security as m
+
+
+class SecurityTests(unittest.TestCase):
+    def test_all_supported_transitions_and_siren(self):
+        table = {
+            Disarmed: {&quot;arm&quot;: getattr(m, &quot;Arming&quot;, Armed), &quot;motion&quot;: Disarmed, &quot;disarm&quot;: Disarmed},
+            Armed: {&quot;arm&quot;: Armed, &quot;motion&quot;: Alarm, &quot;disarm&quot;: Disarmed},
+            Alarm: {&quot;arm&quot;: Alarm, &quot;motion&quot;: Alarm, &quot;disarm&quot;: Disarmed},
+        }
+        for initial, transitions in table.items():
+            for event, expected in transitions.items():
+                with self.subTest(initial=initial.__name__, event=event):
+                    system = SecuritySystem()
+                    system.transition_to(initial())
+                    system.handle(event)
+                    self.assertIsInstance(system.state, expected)
+                    self.assertEqual(system.siren, expected is Alarm)
+
+    def test_unknown_event_preserves_state(self):
+        system = SecuritySystem()
+        state = system.state
+        with self.assertRaises(ValueError):
+            system.handle(&quot;unknown&quot;)
+        self.assertIs(system.state, state)
+        self.assertFalse(system.siren)
+
+
+class TurnstileTests(unittest.TestCase):
+    def test_full_transition_table(self):
+        for initial, event, result, final in (
+            (&quot;locked&quot;, &quot;coin&quot;, &quot;open&quot;, &quot;unlocked&quot;),
+            (&quot;locked&quot;, &quot;passage&quot;, &quot;blocked&quot;, &quot;locked&quot;),
+            (&quot;unlocked&quot;, &quot;coin&quot;, &quot;return_coin&quot;, &quot;unlocked&quot;),
+            (&quot;unlocked&quot;, &quot;passage&quot;, &quot;pass_and_close&quot;, &quot;locked&quot;),
+        ):
+            with self.subTest(initial=initial, event=event):
+                turnstile = Turnstile()
+                if initial == &quot;unlocked&quot;:
+                    turnstile.handle(&quot;coin&quot;)
+                self.assertEqual(turnstile.handle(event), result)
+                self.assertEqual(turnstile.state, final)
+
+    def test_one_payment_cannot_buy_two_passages(self):
+        turnstile = Turnstile()
+        for event, result in ((&quot;coin&quot;, &quot;open&quot;), (&quot;passage&quot;, &quot;pass_and_close&quot;), (&quot;passage&quot;, &quot;blocked&quot;)):
+            self.assertEqual(turnstile.handle(event), result)
+        with self.assertRaises(ValueError):
+            turnstile.handle(&quot;unknown&quot;)
+        self.assertEqual(turnstile.state, &quot;locked&quot;)
+</code></pre></details><details open><summary>tests/test_extra.py</summary><button type="button" class="copy">Копировать код</button><span class="status" role="status"></span><pre><code>import unittest
+from ..security import Armed
+from ..state_entry_log import LoggedSecuritySystem
+
+
+class EntryLogTests(unittest.TestCase):
+    def test_history_and_siren_with_repeated_transitions(self):
+        system = LoggedSecuritySystem()
+        system.transition_to(Armed())
+        system.transition_to(Armed())
+        self.assertEqual(system.history, [&quot;Disarmed&quot;, &quot;Armed&quot;])
+        system.handle(&quot;motion&quot;)
+        self.assertTrue(system.siren)
+        system.handle(&quot;disarm&quot;)
+        self.assertFalse(system.siren)
+        self.assertEqual(system.history, [&quot;Disarmed&quot;, &quot;Armed&quot;, &quot;Alarm&quot;, &quot;Disarmed&quot;])
+</code></pre></details><details open><summary>tests/test_task.py</summary><button type="button" class="copy">Копировать код</button><span class="status" role="status"></span><pre><code>import unittest
+from .. import security as m
+
+
+class ArmingTests(unittest.TestCase):
+    def setUp(self):
+        self.assertIsNotNone(getattr(m, &quot;Arming&quot;, None), &quot;ЗАДАНИЕ: добавьте Arming и timeout, см. TASK.md&quot;)
+
+    def test_waiting_then_alarm(self):
+        system = m.SecuritySystem()
+        system.handle(&quot;arm&quot;)
+        for event in (&quot;arm&quot;, &quot;motion&quot;):
+            system.handle(event)
+            self.assertIsInstance(system.state, m.Arming)
+            self.assertFalse(system.siren)
+        system.handle(&quot;timeout&quot;)
+        self.assertIsInstance(system.state, m.Armed)
+        system.handle(&quot;motion&quot;)
+        self.assertIsInstance(system.state, m.Alarm)
+        self.assertTrue(system.siren)
+
+    def test_cancellation_and_timeout_elsewhere(self):
+        system = m.SecuritySystem()
+        system.handle(&quot;arm&quot;)
+        system.handle(&quot;disarm&quot;)
+        self.assertIsInstance(system.state, m.Disarmed)
+        for state in (m.Disarmed(), m.Armed(), m.Alarm()):
+            system.transition_to(state)
+            system.handle(&quot;timeout&quot;)
+            self.assertIs(system.state, state)
+            self.assertEqual(system.siren, isinstance(state, m.Alarm))
+</code></pre></details></main><script>
+document.querySelectorAll('.copy').forEach(button => {
+  button.addEventListener('click', async () => {
+    const code = button.parentElement.querySelector('code');
+    const status = button.nextElementSibling;
+    try {
+      await navigator.clipboard.writeText(code.textContent);
+      status.textContent = 'Скопировано';
+    } catch {
+      const range = document.createRange();
+      range.selectNodeContents(code);
+      const selection = window.getSelection();
+      selection.removeAllRanges(); selection.addRange(range);
+      status.textContent = 'Код выделен. Нажмите Ctrl+C или ⌘C.';
+    }
+  });
+});
+window.addEventListener('beforeprint', () => {
+  document.querySelectorAll('details').forEach(item => {
+    item.dataset.wasOpen = String(item.open); item.open = true;
+  });
+});
+window.addEventListener('afterprint', () => {
+  document.querySelectorAll('details').forEach(item => {
+    item.open = item.dataset.wasOpen === 'true';
+  });
+});
+</script></body></html>

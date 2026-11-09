@@ -1,0 +1,46 @@
+@startuml
+allowmixing
+top to bottom direction
+skinparam backgroundColor white
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundcorner 0
+skinparam defaultFontName Arial
+skinparam defaultFontSize 18
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor white
+skinparam classHeaderBackgroundColor white
+skinparam rectangleBackgroundColor white
+skinparam noteBackgroundColor white
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 70
+hide circle
+
+class TemperatureSensor {
+ +value
+ -observers: list
+ +subscribe(observer)
+ +unsubscribe(observer)
+ +set_value(value)
+}
+interface Observer <<interface>> {
+ +update(value)
+}
+class Display {
+ +update(value)
+}
+class Log {
+ +values: list
+ +update(value)
+}
+TemperatureSensor --> "0..*" Observer : уведомляет
+Observer <|.. Display
+Observer <|.. Log
+Display -[hidden]right- Log
+note bottom of Observer
+ Структурный контракт Python:
+ достаточно метода update(value)
+end note
+
+@enduml

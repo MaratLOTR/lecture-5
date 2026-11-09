@@ -1,0 +1,49 @@
+@startuml
+allowmixing
+top to bottom direction
+skinparam backgroundColor white
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundcorner 0
+skinparam defaultFontName Arial
+skinparam defaultFontSize 18
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor white
+skinparam classHeaderBackgroundColor white
+skinparam rectangleBackgroundColor white
+skinparam noteBackgroundColor white
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 70
+hide circle
+
+rectangle "Client\nВыбор стратегии" as Client
+abstract class HeatingStrategy {
+ {abstract} +power(current, target)
+}
+class Thermostat {
+ +strategy: HeatingStrategy
+ +set_strategy(strategy)
+ +tick(current, target)
+}
+class Eco {
+ +power(current, target)
+}
+class Comfort {
+ +power(current, target)
+}
+Client ..> Thermostat : set_strategy()
+Thermostat --> "1" HeatingStrategy : strategy
+HeatingStrategy <|-- Eco
+HeatingStrategy <|-- Comfort
+Eco -[hidden]right- Comfort
+note bottom of Eco
+ 40 при current < target
+ Иначе 0
+end note
+note bottom of Comfort
+ Мощность зависит от отклонения
+ Диапазон от 0 до 100
+end note
+
+@enduml
